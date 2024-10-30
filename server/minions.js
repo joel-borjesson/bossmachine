@@ -1,3 +1,4 @@
+
 const express = require('express');
 const minionsRouter = express.Router();
 
@@ -8,11 +9,11 @@ const { getAllFromDatabase,
     deleteFromDatabasebyId
     } = require('./db.js');
 
-// Existence checking
-minionsRouter.use('/:minionId', (req, res, next) => {
-    const foundMinion = getFromDatabaseById('minions', req.params.minionId);
+minionsRouter.param('minionId', (req, res, next, id) => {
+    const minionId = id;
+    const foundMinion = getFromDatabaseById('minions', minionId);
     if (foundMinion) {
-        req.body.id = req.params.minionId;
+        req.minionId = minionId;
         next();
     } else {
         res.status(404).send('Invalid minionId');
@@ -24,10 +25,11 @@ minionsRouter.use('/:minionId', (req, res, next) => {
 minionsRouter.get('/', (req, res, next) => {
     const allMinions = getAllFromDatabase('minions');
     res.status(200).send(allMinions);
+    next();
 });
 
 minionsRouter.get('/:minionId', (req, res, next) => {
-    res.send(getFromDatabaseById('minions', req.params.minionId));
+    res.status(200).send(getFromDatabaseById('minions', req.minionId));
 });
 
 minionsRouter.post('/', (req, res, next) => {
@@ -46,32 +48,12 @@ minionsRouter.put('/:minionId', (req, res, next) => {
 });
 
 minionsRouter.delete('/:minionId', (req, res, next) => {
-    deleteFromDatabasebyId('minions', req.params.minionId);
+    deleteFromDatabasebyId('minions', req.minionId);
     res.status(204).send('minion dissolved');
 });
 
-// work routes
-
-minionsRouter.get('/:minionId/work', (req, res, next) => {
-    res.send(getAllFromDatabase('work', req.params.minionId));
-});
-
-minionsRouter.post('/:minionId/work', (req, res, next) => {
-    const newWork = addToDatabase('work', {
-        title: req.body.title,
-        description: req.body.description,
-        hours: req.body.hours,
-        minionId: req.params.minionId
-    });
-    res.status(201).send(newWork);
-});
-
-minionsRouter.put('/:minionId/work/:workId', (req, res, next) => {
-    console.log(req.params);
-    console.log('test');
-    updateInstanceInDatabase('work', req.params.workId);
-    res.status(204).send(req.body);
-})
+const workRouter = require('./work.js');
+minionsRouter.use('/:minionId/work', workRouter);
 
 module.exports = minionsRouter;
 
